@@ -2,6 +2,7 @@
   "name": "dilruksha-portfolio",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "homepage": "https://kavindiR.github.io/dilruksha-portfolio",
   "scripts": {
     "dev": "vite",
@@ -15,6 +16,7 @@
     "@reduxjs/toolkit": "^1.9.5",
     "aos": "^2.3.4",
     "framer-motion": "^10.12.16",
+    "lucide-react": "^0.562.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-redux": "^8.1.2",
