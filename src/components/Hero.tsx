@@ -1,622 +1,460 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { Mail, Linkedin, Phone, Download, ChevronDown, Cpu, Zap, Network, Sparkles } from 'lucide-react';
-import { personalInfo } from '../data/portfolio';
+import { motion, useInView } from 'framer-motion';
+import { useRef, useMemo } from 'react';
+import { ArrowDown } from 'lucide-react';
+import { personalInfo, education } from '../data/portfolio';
+import profileImage from '../assets/Dilruksha.png';
 
-interface Particle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  radius: number;
-  color: string;
-  connections: number[];
-  pulse: number;
-  pulseSpeed: number;
-}
+// Professional Data Science Background Animation Component
+function DataScienceBackground() {
+  // Neural Network Structure - 3 layers with proper connections
+  const neuralNetwork = useMemo(() => {
+    const inputLayer = Array.from({ length: 6 }, (_, i) => ({
+      id: `input-${i}`,
+      x: 15,
+      y: 20 + i * 12,
+    }));
 
-interface Connection {
-  x1: number;
-  y1: number;
-  x2: number;
-  x3: number;
-  y2: number;
-  y3: number;
-  opacity: number;
-  width: number;
-}
+    const hiddenLayer = Array.from({ length: 8 }, (_, i) => ({
+      id: `hidden-${i}`,
+      x: 50,
+      y: 15 + i * 10,
+    }));
 
-const container = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.2,
-    },
-  },
-};
+    const outputLayer = Array.from({ length: 4 }, (_, i) => ({
+      id: `output-${i}`,
+      x: 85,
+      y: 25 + i * 15,
+    }));
 
-const item = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0 },
-};
+    // Create connections from input to hidden
+    const inputToHidden = inputLayer.flatMap((input) =>
+      hiddenLayer.map((hidden, idx) => ({
+        id: `conn-${input.id}-${hidden.id}`,
+        from: input,
+        to: hidden,
+        weight: 0.3 + Math.random() * 0.4,
+      }))
+    );
 
-export default function Hero() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [particles, setParticles] = useState<Particle[]>([]);
-  const [connections, setConnections] = useState<Connection[]>([]);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [isInteracting, setIsInteracting] = useState(false);
-  const animationRef = useRef<number>(0);
-  const particleCount = 100;
+    // Create connections from hidden to output
+    const hiddenToOutput = hiddenLayer.flatMap((hidden) =>
+      outputLayer.map((output, idx) => ({
+        id: `conn-${hidden.id}-${output.id}`,
+        from: hidden,
+        to: output,
+        weight: 0.3 + Math.random() * 0.4,
+      }))
+    );
 
-  const handleScrollToAbout = () => {
-    document.querySelector('#about')?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  const initParticles = useCallback(() => {
-    if (!containerRef.current) return;
-    
-    const { width, height } = containerRef.current.getBoundingClientRect();
-    const newParticles: Particle[] = [];
-    const colors = [
-      '#3B82F6', // Blue
-      '#06B6D4', // Cyan
-      '#8B5CF6', // Violet
-      '#10B981', // Emerald
-      '#F59E0B', // Amber
-    ];
-
-    for (let i = 0; i < particleCount; i++) {
-      newParticles.push({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.5,
-        vy: (Math.random() - 0.5) * 0.5,
-        radius: Math.random() * 3 + 1,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        connections: [],
-        pulse: Math.random() * Math.PI * 2,
-        pulseSpeed: Math.random() * 0.05 + 0.02,
-      });
-    }
-    setParticles(newParticles);
+    return {
+      inputLayer,
+      hiddenLayer,
+      outputLayer,
+      connections: [...inputToHidden, ...hiddenToOutput],
+    };
   }, []);
 
-  const updateParticles = useCallback(() => {
-    if (!containerRef.current || particles.length === 0) return;
+  // Data Pipeline Stages
+  const pipelineStages = useMemo(() => [
+    { id: 'extract', x: 10, label: 'Extract', width: 15 },
+    { id: 'transform', x: 30, label: 'Transform', width: 20 },
+    { id: 'load', x: 55, label: 'Load', width: 15 },
+    { id: 'analyze', x: 75, label: 'Analyze', width: 15 },
+  ], []);
 
-    const { width, height } = containerRef.current.getBoundingClientRect();
-    const newParticles = [...particles];
-    const newConnections: Connection[] = [];
-    const connectionDistance = 150;
-    const mouseInfluenceRadius = 200;
-    const mouseRepelStrength = 300;
-    const mouseAttractStrength = 150;
-
-    // Update particle positions and apply mouse interaction
-    newParticles.forEach((particle, i) => {
-      // Calculate distance to mouse
-      const dx = mousePos.x - particle.x;
-      const dy = mousePos.y - particle.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-
-      // Mouse interaction
-      if (distance < mouseInfluenceRadius && isInteracting) {
-        const angle = Math.atan2(dy, dx);
-        const force = mouseRepelStrength / (distance + 1);
-        particle.vx -= Math.cos(angle) * force * 0.01;
-        particle.vy -= Math.sin(angle) * force * 0.01;
-      }
-
-      // Update position with velocity
-      particle.x += particle.vx;
-      particle.y += particle.vy;
-
-      // Bounce off walls
-      if (particle.x < 0 || particle.x > width) particle.vx *= -0.9;
-      if (particle.y < 0 || particle.y > height) particle.vy *= -0.9;
-
-      // Keep within bounds
-      particle.x = Math.max(0, Math.min(width, particle.x));
-      particle.y = Math.max(0, Math.min(height, particle.y));
-
-      // Apply friction
-      particle.vx *= 0.99;
-      particle.vy *= 0.99;
-
-      // Update pulse
-      particle.pulse += particle.pulseSpeed;
-
-      // Reset connections
-      particle.connections = [];
-    });
-
-    // Create connections between nearby particles
-    for (let i = 0; i < newParticles.length; i++) {
-      for (let j = i + 1; j < newParticles.length; j++) {
-        const p1 = newParticles[i];
-        const p2 = newParticles[j];
-        const dx = p1.x - p2.x;
-        const dy = p1.y - p2.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-
-        if (distance < connectionDistance) {
-          p1.connections.push(j);
-          
-          const opacity = 1 - (distance / connectionDistance);
-          const width = 0.5 + opacity * 1.5;
-          
-          newConnections.push({
-            x1: p1.x,
-            y1: p1.y,
-            x2: p2.x,
-            y2: p2.y,
-            x3: (p1.x + p2.x) / 2,
-            y3: (p1.y + p2.y) / 2,
-            opacity,
-            width,
-          });
-        }
-      }
+  // Statistical Distribution Points (Normal Distribution Curve)
+  const distributionPoints = useMemo(() => {
+    const points = [];
+    for (let i = 0; i < 50; i++) {
+      const x = (i / 50) * 100;
+      // Normal distribution curve (bell curve)
+      const y = 80 + Math.exp(-Math.pow((x - 50) / 15, 2)) * 15;
+      points.push({ x, y, opacity: 0.3 + Math.random() * 0.4 });
     }
+    return points;
+  }, []);
 
-    setParticles(newParticles);
-    setConnections(newConnections);
-  }, [particles, mousePos, isInteracting]);
+  // Data Clusters (K-means style visualization)
+  const clusters = useMemo(() => {
+    const clusterCenters = [
+      { x: 25, y: 30, color: 'rgba(59, 130, 246, 0.6)' },
+      { x: 70, y: 25, color: 'rgba(59, 130, 246, 0.5)' },
+      { x: 50, y: 60, color: 'rgba(59, 130, 246, 0.4)' },
+    ];
 
-  const animate = useCallback(() => {
-    updateParticles();
-    draw();
-
-    if (canvasRef.current) {
-      animationRef.current = requestAnimationFrame(animate);
-    }
-  }, [updateParticles]);
-
-  const draw = useCallback(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext('2d');
-    if (!canvas || !ctx || !containerRef.current) return;
-
-    const { width, height } = containerRef.current.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
-
-    // Set canvas size with device pixel ratio
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
-    ctx.scale(dpr, dpr);
-
-    // Clear canvas with gradient background
-    const gradient = ctx.createLinearGradient(0, 0, width, height);
-    gradient.addColorStop(0, 'rgba(30, 41, 59, 0.05)');
-    gradient.addColorStop(0.5, 'rgba(30, 64, 175, 0.05)');
-    gradient.addColorStop(1, 'rgba(8, 145, 178, 0.05)');
-
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, width, height);
-
-    // Draw connections with gradient
-    connections.forEach(conn => {
-      const gradient = ctx.createLinearGradient(conn.x1, conn.y1, conn.x2, conn.y2);
-      gradient.addColorStop(0, `rgba(59, 130, 246, ${conn.opacity * 0.3})`);
-      gradient.addColorStop(0.5, `rgba(139, 92, 246, ${conn.opacity * 0.2})`);
-      gradient.addColorStop(1, `rgba(6, 182, 212, ${conn.opacity * 0.3})`);
-
-      ctx.beginPath();
-      ctx.moveTo(conn.x1, conn.y1);
-      
-      // Create curved connections
-      const cp1x = (conn.x1 + conn.x3) / 2 + (conn.y2 - conn.y1) * 0.1;
-      const cp1y = (conn.y1 + conn.y3) / 2 - (conn.x2 - conn.x1) * 0.1;
-      const cp2x = (conn.x2 + conn.x3) / 2 + (conn.y2 - conn.y1) * 0.1;
-      const cp2y = (conn.y2 + conn.y3) / 2 - (conn.x2 - conn.x1) * 0.1;
-      
-      ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, conn.x2, conn.y2);
-      
-      ctx.strokeStyle = gradient;
-      ctx.lineWidth = conn.width;
-      ctx.lineCap = 'round';
-      ctx.stroke();
-
-      // Add glow effect to connections near mouse
-      if (isInteracting) {
-        const mouseDist = distanceToLine(mousePos.x, mousePos.y, conn.x1, conn.y1, conn.x2, conn.y2);
-        if (mouseDist < 50) {
-          ctx.shadowBlur = 20;
-          ctx.shadowColor = 'rgba(59, 130, 246, 0.5)';
-          ctx.stroke();
-          ctx.shadowBlur = 0;
-        }
-      }
-    });
-
-    // Draw particles with glow effect
-    particles.forEach(particle => {
-      const pulseScale = 1 + Math.sin(particle.pulse) * 0.3;
-      const radius = particle.radius * pulseScale;
-
-      // Particle glow
-      ctx.beginPath();
-      ctx.arc(particle.x, particle.y, radius * 3, 0, Math.PI * 2);
-      const glowGradient = ctx.createRadialGradient(
-        particle.x, particle.y, 0,
-        particle.x, particle.y, radius * 3
-      );
-      glowGradient.addColorStop(0, `${particle.color}40`);
-      glowGradient.addColorStop(1, `${particle.color}00`);
-      ctx.fillStyle = glowGradient;
-      ctx.fill();
-
-      // Particle core
-      ctx.beginPath();
-      ctx.arc(particle.x, particle.y, radius, 0, Math.PI * 2);
-      const coreGradient = ctx.createRadialGradient(
-        particle.x - radius / 2, particle.y - radius / 2, 0,
-        particle.x, particle.y, radius
-      );
-      coreGradient.addColorStop(0, '#ffffff');
-      coreGradient.addColorStop(0.5, particle.color);
-      coreGradient.addColorStop(1, `${particle.color}80`);
-      ctx.fillStyle = coreGradient;
-      ctx.fill();
-
-      // Particle highlight
-      ctx.beginPath();
-      ctx.arc(particle.x - radius * 0.3, particle.y - radius * 0.3, radius * 0.4, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-      ctx.fill();
-    });
-
-    // Draw mouse interaction effect
-    if (isInteracting) {
-      const interactionRadius = 100;
-      const rippleRadius = interactionRadius * (1 + Math.sin(Date.now() * 0.005) * 0.2);
-
-      // Ripple effect
-      ctx.beginPath();
-      ctx.arc(mousePos.x, mousePos.y, rippleRadius, 0, Math.PI * 2);
-      const rippleGradient = ctx.createRadialGradient(
-        mousePos.x, mousePos.y, 0,
-        mousePos.x, mousePos.y, rippleRadius
-      );
-      rippleGradient.addColorStop(0, 'rgba(59, 130, 246, 0.2)');
-      rippleGradient.addColorStop(1, 'rgba(59, 130, 246, 0)');
-      ctx.fillStyle = rippleGradient;
-      ctx.fill();
-
-      // Mouse point glow
-      ctx.beginPath();
-      ctx.arc(mousePos.x, mousePos.y, 10, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(59, 130, 246, 0.3)';
-      ctx.fill();
-
-      // Mouse point core
-      ctx.beginPath();
-      ctx.arc(mousePos.x, mousePos.y, 4, 0, Math.PI * 2);
-      ctx.fillStyle = '#3B82F6';
-      ctx.fill();
-    }
-  }, [particles, connections, mousePos, isInteracting]);
-
-  const distanceToLine = (px: number, py: number, x1: number, y1: number, x2: number, y2: number) => {
-    const A = px - x1;
-    const B = py - y1;
-    const C = x2 - x1;
-    const D = y2 - y1;
-
-    const dot = A * C + B * D;
-    const lenSq = C * C + D * D;
-    let param = -1;
-    
-    if (lenSq !== 0) param = dot / lenSq;
-
-    let xx, yy;
-
-    if (param < 0) {
-      xx = x1;
-      yy = y1;
-    } else if (param > 1) {
-      xx = x2;
-      yy = y2;
-    } else {
-      xx = x1 + param * C;
-      yy = y1 + param * D;
-    }
-
-    const dx = px - xx;
-    const dy = py - yy;
-    return Math.sqrt(dx * dx + dy * dy);
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    setMousePos({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    });
-  };
-
-  const handleInteractionStart = () => {
-    setIsInteracting(true);
-    // Add velocity to particles based on mouse position
-    setParticles(prev => prev.map(particle => {
-      const dx = mousePos.x - particle.x;
-      const dy = mousePos.y - particle.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      
-      if (distance < 150) {
-        const angle = Math.atan2(dy, dx);
-        const strength = 5;
+    return clusterCenters.flatMap((center, clusterIdx) =>
+      Array.from({ length: 12 }, (_, i) => {
+        const angle = (i / 12) * Math.PI * 2;
+        const radius = 3 + Math.random() * 4;
         return {
-          ...particle,
-          vx: Math.cos(angle) * strength,
-          vy: Math.sin(angle) * strength,
+          id: `cluster-${clusterIdx}-${i}`,
+          x: center.x + Math.cos(angle) * radius,
+          y: center.y + Math.sin(angle) * radius,
+          color: center.color,
         };
-      }
-      return particle;
-    }));
-  };
-
-  const handleInteractionEnd = () => {
-    setIsInteracting(false);
-  };
-
-  useEffect(() => {
-    initParticles();
-  }, [initParticles]);
-
-  useEffect(() => {
-    const handleResize = () => {
-      initParticles();
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [initParticles]);
-
-  useEffect(() => {
-    if (particles.length > 0) {
-      animationRef.current = requestAnimationFrame(animate);
-    }
-
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, [animate, particles.length]);
+      })
+    );
+  }, []);
 
   return (
-    <section
-      id="home"
-      ref={containerRef}
-      onMouseMove={handleMouseMove}
-      onMouseDown={handleInteractionStart}
-      onMouseUp={handleInteractionEnd}
-      onTouchStart={handleInteractionStart}
-      onTouchEnd={handleInteractionEnd}
-      className="min-h-screen flex items-center justify-center relative bg-gradient-to-br from-gray-50 via-blue-50 to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 overflow-hidden"
-    >
-      {/* Interactive Network Canvas */}
-      <canvas
-        ref={canvasRef}
-        className="absolute inset-0 w-full h-full"
-      />
-
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <motion.div
-          className="absolute w-96 h-96 -top-48 -left-48 bg-blue-400/10 dark:bg-blue-600/5 rounded-full blur-3xl"
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-        <motion.div
-          className="absolute w-96 h-96 -bottom-48 -right-48 bg-cyan-400/10 dark:bg-cyan-600/5 rounded-full blur-3xl"
-          animate={{
-            scale: [1.2, 1, 1.2],
-            opacity: [0.5, 0.3, 0.5],
-          }}
-          transition={{
-            duration: 6,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-        
-        {/* Floating Icons */}
-        <motion.div
-          className="absolute top-1/4 left-1/4 text-blue-400/20 dark:text-blue-500/10"
-          animate={{
-            y: [0, -20, 0],
-            rotate: [0, 360],
-          }}
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            ease: "linear",
-          }}
-        >
-          <Network size={80} />
-        </motion.div>
-        
-        <motion.div
-          className="absolute bottom-1/3 right-1/4 text-cyan-400/20 dark:text-cyan-500/10"
-          animate={{
-            y: [0, 20, 0],
-            rotate: [360, 0],
-          }}
-          transition={{
-            duration: 15,
-            repeat: Infinity,
-            ease: "linear",
-          }}
-        >
-          <Cpu size={60} />
-        </motion.div>
-        
-        <motion.div
-          className="absolute top-1/3 right-1/3 text-violet-400/20 dark:text-violet-500/10"
-          animate={{
-            y: [20, 0, 20],
-            x: [0, 20, 0],
-          }}
-          transition={{
-            duration: 12,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        >
-          <Zap size={50} />
-        </motion.div>
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {/* Subtle Grid Background */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="w-full h-full animated-data-grid" />
       </div>
 
-      {/* Interactive Hint */}
-      <motion.div
-        className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-sm text-blue-600 dark:text-cyan-400 bg-white/20 dark:bg-gray-800/20 backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-2"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 2 }}
-      >
-        <Sparkles size={16} />
-        <span>Click or tap to interact with the network</span>
-      </motion.div>
-
-      <motion.div
-        variants={container}
-        initial="hidden"
-        animate="show"
-        className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 relative z-10"
-      >
-        <div className="max-w-4xl mx-auto text-center">
-          <motion.div variants={item} className="mb-8">
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
-              className="w-32 h-32 sm:w-40 sm:h-40 mx-auto mb-8 rounded-full bg-gradient-to-br from-blue-600 to-cyan-600 p-1 shadow-2xl relative"
-            >
-              <motion.div
-                className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-600 to-cyan-600 blur-xl opacity-50"
+      {/* Neural Network Visualization */}
+      <svg className="absolute inset-0 w-full h-full opacity-40" style={{ zIndex: 1 }}>
+        {/* Neural Network Connections */}
+        {neuralNetwork.connections.map((conn, idx) => (
+            <g key={conn.id}>
+              <defs>
+                <linearGradient id={`gradient-${conn.id}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="rgba(59, 130, 246, 0)" />
+                  <stop offset="50%" stopColor={`rgba(59, 130, 246, ${conn.weight})`} />
+                  <stop offset="100%" stopColor="rgba(59, 130, 246, 0)" />
+                </linearGradient>
+              </defs>
+              <motion.line
+                x1={`${conn.from.x}%`}
+                y1={`${conn.from.y}%`}
+                x2={`${conn.to.x}%`}
+                y2={`${conn.to.y}%`}
+                stroke={`url(#gradient-${conn.id})`}
+                strokeWidth="1.5"
+                initial={{ pathLength: 0, opacity: 0 }}
                 animate={{
-                  scale: [1, 1.2, 1],
+                  pathLength: [0, 1, 0],
+                  opacity: [0, conn.weight, 0],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  delay: (idx % 10) * 0.2,
+                  ease: 'easeInOut',
+                }}
+              />
+            </g>
+        ))}
+
+        {/* Neural Network Nodes */}
+        {[...neuralNetwork.inputLayer, ...neuralNetwork.hiddenLayer, ...neuralNetwork.outputLayer].map((node, idx) => (
+          <motion.circle
+            key={node.id}
+            cx={`${node.x}%`}
+            cy={`${node.y}%`}
+            r="4"
+            fill="rgba(59, 130, 246, 0.8)"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{
+              scale: [1, 1.3, 1],
+              opacity: [0.6, 1, 0.6],
+            }}
+            transition={{
+              duration: 2.5,
+              repeat: Infinity,
+              delay: idx * 0.1,
+              ease: 'easeInOut',
+            }}
+            style={{
+              filter: 'drop-shadow(0 0 6px rgba(59, 130, 246, 0.8))',
+            }}
+          />
+        ))}
+
+        {/* Statistical Distribution Curve */}
+        <motion.path
+          d={distributionPoints.reduce((path, p, i) => 
+            path + (i === 0 ? `M ${p.x}% ${p.y}%` : ` L ${p.x}% ${p.y}%`), ''
+          )}
+          fill="none"
+          stroke="rgba(59, 130, 246, 0.5)"
+          strokeWidth="2"
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{
+            pathLength: [0, 1, 0],
+            opacity: [0, 0.6, 0],
+          }}
+          transition={{
+            duration: 4,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+        />
+      </svg>
+
+      {/* Data Pipeline Stages */}
+      <div className="absolute inset-0" style={{ zIndex: 2 }}>
+        {pipelineStages.map((stage, idx) => (
+          <motion.div
+            key={stage.id}
+            className="absolute"
+            style={{
+              left: `${stage.x}%`,
+              top: '75%',
+              width: `${stage.width}%`,
+            }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{
+              opacity: [0.3, 0.8, 0.3],
+              y: [0, -5, 0],
+            }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              delay: idx * 0.5,
+              ease: 'easeInOut',
+            }}
+          >
+            <div className="relative h-1 bg-gradient-to-r from-transparent via-cyber-blue-500 to-transparent rounded-full" />
+            <motion.div
+              className="absolute -top-6 left-0 text-xs text-cyber-blue-400 font-medium uppercase tracking-wider"
+              animate={{ opacity: [0.4, 1, 0.4] }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                delay: idx * 0.3,
+              }}
+            >
+              {stage.label}
+            </motion.div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Data Clusters (K-means visualization) */}
+      {clusters.map((point, idx) => (
+        <motion.div
+          key={point.id}
+          className="absolute w-1.5 h-1.5 rounded-full"
+          style={{
+            left: `${point.x}%`,
+            top: `${point.y}%`,
+            backgroundColor: point.color,
+            boxShadow: `0 0 4px ${point.color}`,
+          }}
+          animate={{
+            scale: [1, 1.5, 1],
+            opacity: [0.4, 0.9, 0.4],
+          }}
+          transition={{
+            duration: 2 + Math.random(),
+            repeat: Infinity,
+            delay: idx * 0.05,
+            ease: 'easeInOut',
+          }}
+        />
+      ))}
+
+      {/* Feature Engineering Flow - Data Transformation */}
+      <svg className="absolute inset-0 w-full h-full opacity-30" style={{ zIndex: 1 }}>
+        {Array.from({ length: 5 }).map((_, i) => {
+          const startX = 20 + i * 15;
+          const endX = startX + 10;
+          const y = 45 + Math.sin(i) * 5;
+          return (
+            <motion.g key={`flow-${i}`}>
+              <motion.circle
+                cx={`${startX}%`}
+                cy={`${y}%`}
+                r="3"
+                fill="rgba(59, 130, 246, 0.6)"
+                animate={{
+                  scale: [1, 1.4, 1],
+                  opacity: [0.5, 1, 0.5],
                 }}
                 transition={{
                   duration: 2,
                   repeat: Infinity,
-                  ease: "easeInOut",
+                  delay: i * 0.3,
                 }}
               />
-              <div className="w-full h-full rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-4xl sm:text-5xl font-bold text-blue-600 dark:text-cyan-400 relative z-10">
-                {personalInfo.name.split(' ').map(n => n[0]).join('')}
+              <motion.line
+                x1={`${startX}%`}
+                y1={`${y}%`}
+                x2={`${endX}%`}
+                y2={`${y}%`}
+                stroke="rgba(59, 130, 246, 0.4)"
+                strokeWidth="1.5"
+                strokeDasharray="4 4"
+                initial={{ pathLength: 0, opacity: 0 }}
+                animate={{
+                  pathLength: [0, 1, 0],
+                  opacity: [0, 0.6, 0],
+                }}
+                transition={{
+                  duration: 2.5,
+                  repeat: Infinity,
+                  delay: i * 0.3,
+                  ease: 'easeInOut',
+                }}
+              />
+              <motion.circle
+                cx={`${endX}%`}
+                cy={`${y}%`}
+                r="3"
+                fill="rgba(59, 130, 246, 0.6)"
+                animate={{
+                  scale: [1, 1.4, 1],
+                  opacity: [0.5, 1, 0.5],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  delay: i * 0.3 + 0.5,
+                }}
+              />
+            </motion.g>
+          );
+        })}
+      </svg>
+
+      {/* Gradient Overlays for Depth */}
+      <div
+        className="absolute inset-0 opacity-30"
+        style={{
+          background: `
+            radial-gradient(ellipse at 15% 25%, rgba(59, 130, 246, 0.12) 0%, transparent 40%),
+            radial-gradient(ellipse at 85% 70%, rgba(59, 130, 246, 0.1) 0%, transparent 40%),
+            radial-gradient(ellipse at 50% 50%, rgba(59, 130, 246, 0.06) 0%, transparent 60%)
+          `,
+          zIndex: 0,
+        }}
+      />
+    </div>
+  );
+}
+
+export default function Hero() {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: '-100px' });
+
+  const scrollToSection = (sectionId: string) => {
+    const element = document.querySelector(sectionId);
+    element?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // Get education data for display
+  const mscDegree = education.find(edu => edu.degree.includes('Data Science & Artificial Intelligence'));
+  const bscDegree = education.find(edu => edu.degree.includes('Statistics & Operations Research'));
+
+  return (
+    <section
+      id="home"
+      ref={ref}
+      className="min-h-screen flex items-center justify-center relative overflow-hidden bg-black"
+    >
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 max-w-7xl">
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center min-h-screen py-12">
+          {/* Left Column - Profile Image */}
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            animate={isInView ? { opacity: 1, x: 0 } : {}}
+            transition={{ duration: 0.8 }}
+            className="flex items-center justify-center lg:justify-start"
+          >
+            <div className="relative w-full max-w-2xl lg:max-w-3xl">
+              <img
+                src={profileImage}
+                alt={personalInfo.name}
+                className="w-full h-auto object-contain"
+              />
+            </div>
+          </motion.div>
+
+          {/* Right Column - Text Content */}
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={isInView ? { opacity: 1, x: 0 } : {}}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="text-white space-y-6 lg:space-y-8"
+          >
+            {/* Professional Title */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="space-y-2"
+            >
+              <p className="text-lg md:text-xl lg:text-2xl font-semibold text-cyber-blue-400 uppercase tracking-wider">
+                Data Engineering Consultant
+              </p>
+              <div className="w-24 h-1 bg-gradient-to-r from-cyber-blue-500 to-cyber-blue-700 rounded-full" />
+            </motion.div>
+
+            {/* Name */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.6, delay: 0.4 }}
+            >
+              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold uppercase tracking-tight leading-none text-glow-blue-sm">
+                DILRUKSHA RAJAPAKSHA
+              </h1>
+            </motion.div>
+
+            {/* Value Proposition */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.6, delay: 0.5 }}
+              className="space-y-4 pt-2"
+            >
+              <p className="text-xl md:text-2xl lg:text-3xl font-semibold leading-tight">
+                Transforming Data into
+                <span className="block text-cyber-blue-400"> Strategic Business Value</span>
+              </p>
+              <p className="text-base md:text-lg text-gray-300 leading-relaxed max-w-2xl">
+                6+ years of expertise in architecting scalable data solutions, optimizing data pipelines, 
+                and enabling data-driven decision making across cloud platforms.
+              </p>
+            </motion.div>
+
+            {/* Credentials Badge */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.6, delay: 0.8 }}
+              className="pt-4"
+            >
+              <div className="inline-flex items-center space-x-4 px-6 py-3 bg-cyber-dark-500/60 backdrop-blur-sm border border-cyber-blue-500/30 rounded-lg shadow-lg">
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs font-semibold text-cyber-blue-400 uppercase tracking-wider">
+                    Certified
+                  </span>
+                </div>
+                <div className="h-4 w-px bg-cyber-blue-500/50" />
+                <div className="flex items-center space-x-3 text-sm">
+                  <span className="text-gray-300">Microsoft</span>
+                  <span className="text-gray-300">•</span>
+                  <span className="text-gray-300">AWS</span>
+                  <span className="text-gray-300">•</span>
+                  <span className="text-gray-300">Databricks</span>
+                </div>
               </div>
             </motion.div>
           </motion.div>
-
-          <motion.h1
-            variants={item}
-            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-4 text-gray-900 dark:text-white"
-          >
-            {personalInfo.name}
-          </motion.h1>
-
-          <motion.div variants={item} className="mb-8">
-            <motion.h2
-              className="text-2xl sm:text-3xl md:text-4xl font-semibold bg-gradient-to-r from-blue-600 via-violet-600 to-cyan-600 bg-clip-text text-transparent"
-              animate={{
-                backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
-              }}
-              transition={{
-                duration: 5,
-                repeat: Infinity,
-                ease: 'linear',
-              }}
-            >
-              {personalInfo.title}
-            </motion.h2>
-          </motion.div>
-
-          <motion.p
-            variants={item}
-            className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed bg-white/30 dark:bg-gray-900/30 backdrop-blur-sm rounded-2xl p-6 border border-white/20 dark:border-gray-700/20"
-          >
-            {personalInfo.summary}
-          </motion.p>
-
-          <motion.div
-            variants={item}
-            className="flex flex-wrap items-center justify-center gap-4 mb-12"
-          >
-            <motion.a
-              href={`mailto:${personalInfo.email}`}
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              onHoverStart={handleInteractionStart}
-              onHoverEnd={handleInteractionEnd}
-              className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 backdrop-blur-sm"
-            >
-              <Mail size={20} />
-              <span>Contact Me</span>
-            </motion.a>
-
-            <motion.a
-              href={`https://${personalInfo.linkedin}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              onHoverStart={handleInteractionStart}
-              onHoverEnd={handleInteractionEnd}
-              className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-gray-800 to-gray-900 dark:from-gray-700 dark:to-gray-800 text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 backdrop-blur-sm"
-            >
-              <Linkedin size={20} />
-              <span>LinkedIn</span>
-            </motion.a>
-
-            <motion.a
-              href={`tel:${personalInfo.phone}`}
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              onHoverStart={handleInteractionStart}
-              onHoverEnd={handleInteractionEnd}
-              className="flex items-center space-x-2 px-6 py-3 bg-white/80 dark:bg-gray-800/80 text-gray-800 dark:text-gray-200 border-2 border-gray-300/50 dark:border-gray-700/50 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 backdrop-blur-sm"
-            >
-              <Phone size={20} />
-              <span className="hidden sm:inline">{personalInfo.phone}</span>
-              <span className="sm:hidden">Call</span>
-            </motion.a>
-          </motion.div>
-
-          <motion.button
-            variants={item}
-            onClick={handleScrollToAbout}
-            className="mx-auto flex items-center justify-center w-12 h-12 rounded-full bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-800 transition-all duration-300 shadow-lg"
-            animate={{
-              y: [0, 10, 0],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: 'easeInOut',
-            }}
-            onHoverStart={handleInteractionStart}
-            onHoverEnd={handleInteractionEnd}
-          >
-            <ChevronDown className="text-gray-600 dark:text-gray-300" />
-          </motion.button>
         </div>
-      </motion.div>
+
+        {/* Scroll indicator */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={isInView ? { opacity: 1 } : {}}
+          transition={{ duration: 0.6, delay: 1 }}
+          className="absolute bottom-8 left-1/2 transform -translate-x-1/2"
+        >
+          <motion.button
+            onClick={() => scrollToSection('#about')}
+            animate={{ y: [0, 10, 0] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="flex flex-col items-center space-y-2 text-white hover:text-gray-300 transition-colors"
+          >
+            <span className="text-sm font-medium">Scroll Down</span>
+            <ArrowDown className="w-6 h-6" />
+          </motion.button>
+        </motion.div>
+      </div>
     </section>
   );
 }
+

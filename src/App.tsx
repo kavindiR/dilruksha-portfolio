@@ -1,6 +1,4 @@
 import { useEffect } from 'react';
-import { useAppSelector } from './store/hooks';
-import { selectTheme } from './store/slices/themeSlice';
 import Header from './components/Header';
 import Hero from './components/Hero';
 import About from './components/About';
@@ -11,17 +9,8 @@ import Contact from './components/Contact';
 import Footer from './components/Footer';
 
 function App() {
-  const theme = useAppSelector(selectTheme);
-
   useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [theme]);
-
-  useEffect(() => {
+    document.documentElement.classList.add('dark');
     document.documentElement.style.scrollBehavior = 'smooth';
     return () => {
       document.documentElement.style.scrollBehavior = 'auto';
@@ -29,9 +18,9 @@ function App() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-300">
+    <div className="min-h-screen bg-black transition-colors duration-300">
       <Header />
-      <main>
+      <main className="relative z-10">
         <Hero />
         <About />
         <Experience />
